@@ -15,6 +15,14 @@ class MainViewController: UIViewController {
   lazy var collectionV = UICollectionView(
     frame: .zero, collectionViewLayout: layout
   )
+  
+  var cafeProvider = CafeProvider()
+  
+  private var filteredCafe: [Cafe] = []
+  private var isFiltering: Bool{
+    let isEmptyText = searchBar.searchBar.text?.isEmpty ?? true
+    return searchBar.isActive && !isEmptyText
+  }
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -38,6 +46,7 @@ class MainViewController: UIViewController {
     
     searchBar.obscuresBackgroundDuringPresentation = false
     searchBar.searchBar.placeholder = "검색..."
+    searchBar.searchResultsUpdater = self
     navigationItem.searchController = searchBar
   }
   
@@ -54,8 +63,8 @@ class MainViewController: UIViewController {
   func setLayout() {
     let width = view.frame.width / 2 - 10
     let height = view.frame.width / 2 + 10
-    layout.minimumInteritemSpacing = 5
-    layout.minimumLineSpacing = 5
+    layout.minimumInteritemSpacing = 10
+    layout.minimumLineSpacing = 10
     layout.itemSize = CGSize(width: width, height: height)
     layout.sectionInset = UIEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
   }
@@ -77,12 +86,43 @@ class MainViewController: UIViewController {
 
 extension MainViewController: UICollectionViewDataSource {
   func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-    return 10
+    print(isFiltering)
+    return  isFiltering ? filteredCafe.count : cafeProvider.list.count
   }
   
   func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: MainCollectionViewCell.identifier, for: indexPath) as! MainCollectionViewCell
+    
+    let cafe = isFiltering ? filteredCafe[indexPath.item] : cafeProvider.list[indexPath.item]
+    
+    cell.configure(
+      image: UIImage(named: cafe.title),
+      titleText: cafe.title,
+      subText: cafe.description,
+      isFavorite: cafe.isFavorite,
+      favoriteActionHandler: favoriteActionHandler(cell:isFavorite:)
+    )
+    
     return cell
+  }
+  
+  private func favoriteActionHandler(cell: MainCollectionViewCell, isFavorite: Bool) {
+    guard let indexPath = collectionV.indexPath(for: cell) else { return }
+    guard let index = !isFiltering
+      ? indexPath.item
+      : cafeProvider.list.firstIndex(of: filteredCafe[indexPath.item]) else { return }
+    cafeProvider.toggleFavoriteCafe(at: index)
+  }
+}
+
+extension MainViewController: UISearchResultsUpdating {
+  func updateSearchResults(for searchController: UISearchController) {
+    if let text = searchBar.searchBar.text?.trimmingCharacters(in: .whitespaces) {
+      filteredCafe = cafeProvider.filterList(by: [text])
+    } else {
+      filteredCafe.removeAll()
+    }
+    collectionV.reloadData()
   }
 }
 

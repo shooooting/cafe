@@ -16,6 +16,7 @@ class MainCollectionViewCell: UICollectionViewCell {
   let title = UILabel()
   let subTitle = UILabel()
   let heart = UIButton()
+
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
@@ -34,6 +35,7 @@ class MainCollectionViewCell: UICollectionViewCell {
     
     heart.setImage(UIImage(systemName: "heart"), for: .normal)
     heart.tintColor = .white
+    heart.addTarget(self, action: #selector(touchHeartButton), for: .touchUpInside)
     
     imgV.layer.cornerRadius = 10
     imgV.clipsToBounds = true
@@ -41,6 +43,16 @@ class MainCollectionViewCell: UICollectionViewCell {
     imgV.backgroundColor = .red
     title.backgroundColor = .blue
     subTitle.backgroundColor = .purple
+  }
+  
+  private var favoriteActionHandler: ((MainCollectionViewCell, Bool) -> ())?
+  
+  @objc func touchHeartButton(_ sender: UIButton) {
+    sender.isSelected.toggle()
+    UIView.animate(withDuration: 0.2) {
+      sender.tintColor = sender.isSelected ? .systemPink : .white
+    }
+    favoriteActionHandler?(self, sender.isSelected)
   }
   
   func setConstraint() {
@@ -69,6 +81,21 @@ class MainCollectionViewCell: UICollectionViewCell {
       heart.widthAnchor.constraint(equalToConstant: 20),
       heart.heightAnchor.constraint(equalToConstant: 20)
     ])
+  }
+  
+  func configure(
+    image: UIImage?,
+    titleText: String?,
+    subText: String?,
+    isFavorite: Bool = false,
+    favoriteActionHandler: ((MainCollectionViewCell, Bool) -> ())? = nil
+  ) {
+    imgV.image = image
+    title.text = titleText
+    subTitle.text = subText
+    heart.isSelected = isFavorite
+    heart.tintColor = isFavorite ? .systemPink : .white
+    self.favoriteActionHandler = favoriteActionHandler
   }
 
 }
